@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>MG Online</title>
+    <link type="text/css" rel="stylesheet" href="static/style.css">
+  </head> 
+  <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <body>
+    <h1>MG 1.0</h1>
+    <input type="submit" id="leave" value="Leave"/>
+    <form action="" method="POST">
+      <input type="text" name="name" id="name"/>
+      <input type="submit" id="play" value="Play" />
+    </form>
+    <br>
+    <br>
+    <div id="player_block">
+    </div>
+    <br>
+    <br>
+    <p>POT</p>
+    <p id="pot">0</p>
+    <div id="control_block">
+      <img id="card" src="static/JPEG/Red_back.jpg">
+      <input type="submit" id="fold" value="Fold"/>
+      <input type="submit" id="call" value="Call"/>
+      <input type="submit" id="raise" value="Raise"/>
+      <input type="text" id="amount" value="">
+      <br>
+      <p id="warning"></p>
+    </div>
+  </body>
+  <script type="text/javascript">
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    
+    $('#play').on('click onsubmit', function(event) {
+      event.preventDefault();
+      socket.emit('play', {id : socket.id, name : $('#name').val()});
+      $('#name').val('');
+      $('#play').focus();
+    });
+
+    socket.on('successful join', function(msg) {
+      document.getElementById('leave').style.display = "block";
+      document.getElementById('control_block').style.display = "block";
+      sessionStorage.setItem('client id', socket.id);
+      sessionStorage.setItem('client name', msg.name);
+      socket.emit('join', {room : 'private room'});
+    });
+
+    $('#leave').on('click', function(event) {
+      socket.emit('leave game', {id : socket.id});
+    });
+
+    socket.on('successful leave', function() {
+      document.getElementById('leave').style.display = "none";
+      document.getElementById('control_block').style.display = "none";
+      sessionStorage.clear();
+      socket.emit('leave', {room : 'private room'});
+    })
+
+
+    // fold call raise
+    $('#fold').on('click', function(event) {
+      socket.emit('fold', {id : socket.id});
+    });
+
+    $('#call').on('click', function(event) {
+      socket.emit('call', {id : socket.id});
+    });
+
+    $('#raise').on('click', function(event) {
+      socket.emit('raise', {
+        id : socket.id, 
+        val : $('#amount').val(), 
+        stack : $('#' + sessionStorage.getItem('client name') + 'stack').html()
+      });
+    });
+
+    // updates players on connect
+    socket.on('connect', function() {
+      if (sessionStorage.getItem('client id') != null) {
+        socket.emit('reconnection', {old_id : sessionStorage.getItem('client id'), new_id : socket.id})
+        document.getElementById('leave').style.display = "block";
+        document.getElementById('control_block').style.display = "block";
+        sessionStorage.setItem('client id', socket.id);
+        socket.emit('join', {room : 'private room'});
+        $('#warning').html('');
+      }
+      socket.emit('init players');
+    });
+
+    /*
+    socket.on('disconnect', function() {
+      document.getElementById('leave').style.display = "none";
+      document.getElementById('control_block').style.display = "none";
+    })
+    */
+
+    // creates player element
+    socket.on('insert player', function(msg) {
+      $('#player_block').append(
+        "<div class=\"player\" id=" + msg.name + "><p>" + msg.name + "</p><p id=" + msg.name + "stack>1000</p></div>"
+      );
+    });
+
+    // deletes player element
+    socket.on('delete player', function(msg) {
+      $('#' + msg.name).remove();
+    });
+
+    socket.on('start game', function() {
+      socket.emit('request card', {id : socket.id});
+    });
+
+    socket.on('deal card', function(msg) {
+      $('#card').attr('src', 'static/JPEG/' + msg.card + '.jpg');
+    });
+
+    socket.on('highlight', function(msg) {
+      document.getElementById(msg.name).style.backgroundColor = msg.color;
+      document.getElementById(msg.name).style.borderColor = msg.border;
+    });
+
+    // warning
+    socket.on('warning', function(msg) {
+      $('#warning').html(msg.val);
+    });
+
+    // generic event to update inner html
+    socket.on('update', function(msg) {
+      $('#' + msg.id).html(msg.val);
+    });
+  </script>
+</html>

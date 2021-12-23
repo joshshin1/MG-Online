@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <head>
+    <title>MG Online</title>
+  </head>
+  <body>
+    <h1>MG 1.0</h1>
+    <form action="/play" method="post"> <!--sends info to /play-->
+      <input type="text" id="name"/>
+      <input type="submit" class="name" id="play" value="Play" />
+    </form>
+  </body>
+  <script type="text/javascript">
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    
+    $('input.name').on('click onsubmit', function(event) {
+      socket.emit('action', {
+        id : socket.id,
+        action : $(this).attr('id'),  
+        val : $('#name').val()
+      });
+      $('#name').val('');
+    });
+</script>
+</html>
