@@ -81,6 +81,7 @@
 
     // updates players on connect
     socket.on('connect', function() {
+      console.log("client connected");
       if (sessionStorage.getItem('client id') != null) {
         socket.emit('reconnection', {old_id : sessionStorage.getItem('client id'), new_id : socket.id})
         document.getElementById('leave').style.display = "block";

@@ -120,6 +120,7 @@ def dealCard(data):
 
 @socketio.on('init players')
 def init_players():
+  print(players)
   for player in players:
     emit('insert player', {'name' : namemap[player]})
   for player in players_folded:
@@ -152,6 +153,7 @@ def reconnection(data):
 
 @socketio.on('play')
 def sit(data):
+  print('sit')
   global game_in_progress
   if data['id'] not in players and data['name'] != '' and len(players) < player_limit:
     player_lock.acquire()
@@ -170,6 +172,7 @@ def sit(data):
       players_folded.add(data['id'])
 
   elif data['id'] in players and players[action] == data['id']:
+    print('deal')
     nextHand()
     emit('highlight', {'name' : namemap[players[action]], 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
     emit('start game', to='private room')
