@@ -130,19 +130,23 @@ def init_players():
 
 @socketio.on('reconnection')
 def reconnection(data):
+  global action
   player_lock.acquire()
   for i in range(len(players)):
     if players[i] == data['old_id']:
       players[i] = data['new_id']
       break
   player_lock.release()
-  if data['old_id'] in players_folded:
-    players_folded.remove(data['old_id'])
-    players_folded.add(data['new_id'])
   namemap[data['new_id']] = namemap[data['old_id']]
   namemap.pop(data['old_id'])
   cardmap[data['new_id']] = cardmap[data['old_id']]
   cardmap.pop(data['old_id'])
+  if data['old_id'] in players_folded:
+    players_folded.remove(data['old_id'])
+    players_folded.add(data['new_id'])
+    emit('highlight', {'name' : 'control_block', 'color' : 'lightcoral', 'border' : 'red'})
+  if i == action:
+    emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' : 'blue'})
   emit('deal card', {'card' : cardmap[data['new_id']]})
 
 
