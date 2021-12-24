@@ -120,7 +120,7 @@ def dealCard(data):
 
 @socketio.on('init players')
 def init_players():
-  print(players)
+  print('init', players)
   for player in players:
     emit('insert player', {'name' : namemap[player]})
   for player in players_folded:
@@ -131,6 +131,7 @@ def init_players():
 
 @socketio.on('reconnection')
 def reconnection(data):
+  print('reconnect', data)
   global action
   player_lock.acquire()
   for i in range(len(players)):
@@ -175,6 +176,7 @@ def sit(data):
     nextHand()
     emit('highlight', {'name' : namemap[players[action]], 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
     emit('start game', to='private room')
+  print('action', action)
 
 
 @socketio.on('leave game')
@@ -202,6 +204,7 @@ def leave(data):
     emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'})
     emit('delete player', {'name' : val}, broadcast=True)
     emit('successful leave')
+    print('action', action)
 
 
 # fold call raise
