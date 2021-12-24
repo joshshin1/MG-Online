@@ -172,7 +172,6 @@ def sit(data):
       players_folded.add(data['id'])
 
   elif data['id'] in players and players[action] == data['id']:
-    print('deal')
     nextHand()
     emit('highlight', {'name' : namemap[players[action]], 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
     emit('start game', to='private room')
@@ -180,6 +179,7 @@ def sit(data):
 
 @socketio.on('leave game')
 def leave(data):
+  print('leave')
   global game_in_progress
   global action
   val = namemap[data['id']]
