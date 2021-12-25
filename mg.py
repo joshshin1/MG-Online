@@ -121,7 +121,8 @@ def dealCard(data):
 
 @socketio.on('init players')
 def init_players():
-  print('init', players)
+  print('init')
+  print(players)
   for player in players:
     emit('insert player', {'name' : namemap[player]})
   for player in players_folded:
@@ -132,7 +133,6 @@ def init_players():
 
 @socketio.on('reconnection')
 def reconnection(data):
-  print('reconnect', data)
   global action
   player_lock.acquire()
   for i in range(len(players)):
@@ -151,11 +151,16 @@ def reconnection(data):
   if i == action:
     emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' : 'blue'})
   emit('deal card', {'card' : cardmap[data['new_id']]})
+  print('reconnect')
+  print(players)
+  print(data)
 
 
 @socketio.on('play')
 def sit(data):
   print('sit')
+  print(players)
+  print(data)
   global game_in_progress
   if data['id'] not in players and data['name'] != '' and len(players) < player_limit:
     player_lock.acquire()
@@ -174,15 +179,17 @@ def sit(data):
       players_folded.add(data['id'])
 
   elif data['id'] in players and players[action] == data['id']:
+    print('dealing')
     nextHand()
     emit('highlight', {'name' : namemap[players[action]], 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
     emit('start game', to='private room')
-  print('action', action)
 
 
 @socketio.on('leave game')
 def leave(data):
   print('leave')
+  print(players)
+  print(data)
   global game_in_progress
   global action
   val = namemap[data['id']]
