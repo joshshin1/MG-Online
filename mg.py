@@ -212,7 +212,6 @@ def leave(data):
     emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'})
     emit('delete player', {'name' : val}, broadcast=True)
     emit('successful leave')
-    print('action', action)
 
 
 # fold call raise
