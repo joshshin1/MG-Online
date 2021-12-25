@@ -7,15 +7,27 @@ pip3 install flask
 pip3 install flask-socketio
 
 # configure nginx
-sudo echo 'server {
+sudo echo "server {
     listen 80;
     server_name 3.19.120.165;
 
     location / {
-        include proxy_params;
+        # disable caching
+        add_header Last-Modified $date_gmt;
+        add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
+        if_modified_since off;
+        expires off;
+        etag off;
+
+        # proxy pass for socketio (CRUCIAL)
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
         proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
     }
-}' /etc/nginx/sites-available/mg
+}" > /etc/nginx/sites-available/mg
 
 sudo ln -s /etc/nginx/sites-available/mg /etc/nginx/sites-enabled
 sudo systemctl nginx restart
