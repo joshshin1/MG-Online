@@ -133,6 +133,9 @@ def init_players():
 
 @socketio.on('reconnection')
 def reconnection(data):
+  print('reconnect')
+  print(players)
+  print(data)
   global action
   player_lock.acquire()
   for i in range(len(players)):
@@ -151,9 +154,6 @@ def reconnection(data):
   if i == action:
     emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' : 'blue'})
   emit('deal card', {'card' : cardmap[data['new_id']]})
-  print('reconnect')
-  print(players)
-  print(data)
 
 
 @socketio.on('play')
@@ -187,7 +187,7 @@ def sit(data):
 
 @socketio.on('leave game')
 def leave(data):
-  print('leave')
+  print('leave game')
   print(players)
   print(data)
   global game_in_progress
@@ -284,11 +284,17 @@ def raisebet(data):
 # handle joining and leaving rooms
 @socketio.on('join')
 def join(data):
-    join_room(data['room'])
+  print('join')
+  print(players)
+  print(data)
+  join_room(data['room'])
 
 @socketio.on('leave')
 def leave(data):
-    leave_room(data['room'])
+  print('leave')
+  print(players)
+  print(data)
+  leave_room(data['room'])
 
 
 if __name__ == '__main__':
