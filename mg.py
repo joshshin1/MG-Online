@@ -106,6 +106,7 @@ def nextPlayer():
 
 @socketio.on('request card')
 def dealCard(data):
+  print('card requested')
   global cards_left
   deck_lock.acquire()
   card_index = random.randint(0, cards_left - 1)
