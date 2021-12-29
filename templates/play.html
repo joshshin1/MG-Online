@@ -11,7 +11,8 @@
     <h1>MG 1.0</h1>
     <input type="submit" id="leave" value="Leave"/>
     <form action="" method="POST">
-      <input type="text" name="name" id="name"/>
+      <input type="text" id="name" placeholder="Name"/>
+      <input type="text" id="stack" placeholder="Stack"/>
       <input type="submit" id="play" value="Play" />
     </form>
     <br>
@@ -20,7 +21,6 @@
     </div>
     <br>
     <br>
-    <p>POT</p>
     <div id="control_block">
       <img id="card" src="static/JPEG/Red_back.jpg">
       <input type="submit" id="fold" value="Fold"/>
@@ -48,8 +48,9 @@
 
       $('#play').on('click onsubmit', function(event) {
         event.preventDefault();
-        socket.emit('play', {id : socket.id, name : $('#name').val()});
+        socket.emit('play', {id : socket.id, name : $('#name').val(), stack : $('#stack').val()});
         $('#name').val('');
+        $('#stack').val('');
         $('#play').focus();
       });
 
@@ -92,8 +93,9 @@
 
       socket.on('insert player', function(msg) {
         $('#player_block').append(
-          "<div class=\"player\" id=" + msg.name + "><div class=\"player_info\"><p>" + msg.name + "</p><p id=" + msg.name + 
-          "stack>1000</p></div><p id=" + msg.name + "bet>0</p></div>"
+          "<div class=\"player\" id=" + msg.name + "><div class=\"player_info\" id=" + 
+          msg.name + "info><p>" + msg.name + "</p><p id=" + msg.name + 
+          "stack>" + msg.stack + "</p></div><p id=" + msg.name + "bet>0</p></div>"
         );
       });
 

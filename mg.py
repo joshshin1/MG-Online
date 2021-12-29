@@ -11,6 +11,7 @@ player_lock = threading.Lock()
 players = []
 players_folded = set()
 namemap = {}
+stackmap = {}
 cardmap = {}
 player_limit = 8
 
@@ -68,8 +69,26 @@ def nextHand():
   last_action = ''
   players_folded = set()
   for player in players:
-    emit('highlight', {'name' : namemap[player], 'color' : 'white', 'border' : 'grey'}, broadcast=True)
+    emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
+    emit('update', {'id' : namemap[player] + 'bet', 'val' : '0'}, broadcast=True)
   nextPlayer()
+
+  
+def nextPlayer():
+  global action
+  global last_action
+  action = (action + 1) % len(players)
+  while players[action] in players_folded:
+    action = (action + 1) % len(players)
+  makeDealer(players[action])
+  if last_action != 'fold':
+    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'})
+
+
+def makeDealer(player):
+  emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'skyblue', 'border' :'blue'}, broadcast=True)
+  emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' :'blue'}, to=player)
+
 
 def showdown():
   global game_in_progress
@@ -79,29 +98,22 @@ def showdown():
   for player in players:
     if player not in players_folded:
       final_two.append(player)
-  if len(final_two) == 1:
-    print(namemap[final_two[0]], 'wins')
-  else:
-    player1 = final_two[0]
-    player2 = final_two[1]
-    if valuemap[cardmap[player1][0]] < valuemap[cardmap[player2][0]]:
-      print(namemap[player2], 'wins')
-    elif valuemap[cardmap[player1][0]] > valuemap[cardmap[player2][0]]:
-      print(namemap[player1], 'wins')
-    else:
-      print('tie')
-  
-def nextPlayer():
-  global action
-  global last_action
-  action = (action + 1) % len(players)
-  while players[action] in players_folded:
-    action = (action + 1) % len(players)
-  emit('highlight', {'name' : namemap[players[action]], 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
-  if last_action != 'fold':
-    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'})
-  emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' : 'blue'}, to=players[action])
 
+  player1 = final_two[0]
+  player2 = final_two[1]
+  if valuemap[cardmap[player1][0]] < valuemap[cardmap[player2][0]]:
+    transfer(player1, player2)
+  elif valuemap[cardmap[player1][0]] > valuemap[cardmap[player2][0]]:
+    transfer(player2, player1)
+  else:
+    print('tie')
+
+
+def transfer(loser, winner):
+  stackmap[loser] -= current_bet
+  stackmap[winner] += current_bet
+  emit('update', {'id' : namemap[loser] + 'stack', 'val' : stackmap[loser]}, broadcast=True)
+  emit('update', {'id' : namemap[winner] + 'stack', 'val' : stackmap[winner]}, broadcast=True)
 
 
 @socketio.on('request card')
@@ -126,9 +138,11 @@ def init_players():
   for player in players:
     emit('insert player', {'name' : namemap[player]})
   for player in players_folded:
-    emit('highlight', {'name' : namemap[player], 'color' : 'lightcoral', 'border' : 'red'})
+    emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'lightcoral', 'border' : 'red'})
+  for player in players:
+    emit('update', {'id' : namemap[player] + 'stack', 'val' : stackmap[player]})
   if len(players) > 0:
-    emit('highlight', {'name' : namemap[players[action]], 'color' : 'skyblue', 'border' : 'blue'})
+    emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'skyblue', 'border' : 'blue'})
 
 
 @socketio.on('reconnection')
@@ -145,6 +159,8 @@ def reconnection(data):
   player_lock.release()
   namemap[data['new_id']] = namemap[data['old_id']]
   namemap.pop(data['old_id'])
+  stackmap[data['new_id']] = stackmap[data['old_id']]
+  stackmap.pop(data['old_id'])
   cardmap[data['new_id']] = cardmap[data['old_id']]
   cardmap.pop(data['old_id'])
   if data['old_id'] in players_folded:
@@ -167,21 +183,21 @@ def sit(data):
     players.append(data['id'])
     player_lock.release()
     namemap[data['id']] = data['name']
+    stackmap[data['id']] = data['stack']
     cardmap[data['id']] = 'Red_back'
-    emit('insert player', {'name' : data['name']}, broadcast=True)
+    emit('insert player', {'name' : data['name'], 'stack' : data['stack']}, broadcast=True)
     emit('successful join', {'name' : data['name']})
     if len(players) == 1:
-      emit('highlight', {'name' : namemap[players[0]], 'color' : 'skyblue', 'border' :'blue'}, broadcast=True)
-      emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' :'blue'}, to=players[0])
+      makeDealer(players[0])
     if game_in_progress:
-      emit('highlight', {'name' : namemap[data['id']], 'color' : 'lightcoral', 'border' : 'red'}, broadcast=True)
+      emit('highlight', {'name' : namemap[data['id']] + 'info', 'color' : 'lightcoral', 'border' : 'red'}, broadcast=True)
       emit('highlight', {'name' : 'control_block', 'color' : 'lightcoral', 'border' :'red'})
       players_folded.add(data['id'])
 
   elif data['id'] in players and players[action] == data['id']:
     print('dealing')
     nextHand()
-    emit('highlight', {'name' : namemap[players[action]], 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
+    #emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
     emit('start game', to='private room')
 
 
@@ -203,11 +219,12 @@ def leave(data):
         index = i
     players.remove(data['id'])
     namemap.pop(data['id'])
+    stackmap.pop(data['id'])
+    cardmap.pop(data['id'])
     player_lock.release()
     if index <= action and len(players) > 0:
       action = (action - 1) % len(players) 
-      emit('highlight', {'name' : namemap[players[action]], 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
-      emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' : 'blue'}, to=players[action])
+      makeDealer(players[action])
 
     emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'})
     emit('delete player', {'name' : val}, broadcast=True)
@@ -219,6 +236,7 @@ def leave(data):
 def fold(data):
   global action
   global last_action
+  global game_in_progress
   if players[action] != data['id']:
     emit('warning', {'val' : 'OUT OF TURN'})
   elif not game_in_progress:
@@ -227,10 +245,17 @@ def fold(data):
     players_folded.add(data['id'])
     if len(players) - len(players_folded) == 2 and last_action == 'call':
       showdown()
+    # there is a winner
     elif len(players) - len(players_folded) == 1:
-      showdown()
+      game_in_progress = False
+      winner = None
+      for player in players:
+        if player not in players_folded:
+          winner = player
+          break
+      transfer(data['id'], winner)
     else:
-      emit('highlight', {'name' : namemap[players[action]], 'color' : 'lightcoral', 'border' : 'red'}, broadcast=True)
+      emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'lightcoral', 'border' : 'red'}, broadcast=True)
       emit('highlight', {'name' : 'control_block', 'color' : 'lightcoral', 'border' : 'red'})
       last_action = 'fold'
       nextPlayer()
@@ -253,7 +278,7 @@ def call(data):
     if len(players) - len(players_folded) == 2:
       showdown()
     else:
-      emit('highlight', {'name' : namemap[players[action]], 'color' : 'white', 'border' : 'grey'}, broadcast=True)
+      emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
       nextPlayer()
       last_action = 'call'
   
@@ -275,9 +300,9 @@ def raisebet(data):
     emit('warning', {'val' : 'NOT ENOUGH MONEY'})
   else:
     current_bet = int(data['val'])
-    emit('highlight', {'name' : namemap[players[action]], 'color' : 'white', 'border' : 'grey'}, broadcast=True)
+    emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
     nextPlayer()
-    emit('update', {'id' : data['id'] + 'bet', 'val' : data['val']}, broadcast=True)
+    emit('update', {'id' : namemap[data['id']] + 'bet', 'val' : data['val']}, broadcast=True)
     last_action = 'raise'
 
 
