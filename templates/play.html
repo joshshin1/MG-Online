@@ -21,6 +21,7 @@
     </div>
     <br>
     <br>
+    <p>Winner:</p>
     <div id="control_block">
       <img id="card" src="static/JPEG/Red_back.jpg">
       <input type="submit" id="fold" value="Fold"/>
@@ -93,7 +94,7 @@
 
       socket.on('insert player', function(msg) {
         $('#player_block').append(
-          "<div class=\"player\" id=" + msg.name + "><div class=\"player_info\" id=" + 
+          "<div class=player id=" + msg.name + "><div class=player_info id=" + 
           msg.name + "info><p>" + msg.name + "</p><p id=" + msg.name + 
           "stack>" + msg.stack + "</p></div><p id=" + msg.name + "bet>0</p></div>"
         );

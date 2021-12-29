@@ -2,3 +2,6 @@
 
 Run the setup script to install packages and configure nginx
 Run the start_gunicorn script to start the server
+
+need integer requirement in stack box
+winner text

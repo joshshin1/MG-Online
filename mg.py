@@ -70,6 +70,7 @@ def nextHand():
   players_folded = set()
   for player in players:
     emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
+    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
     emit('update', {'id' : namemap[player] + 'bet', 'val' : '0'}, broadcast=True)
   nextPlayer()
 
@@ -197,7 +198,6 @@ def sit(data):
   elif data['id'] in players and players[action] == data['id']:
     print('dealing')
     nextHand()
-    #emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
     emit('start game', to='private room')
 
 
