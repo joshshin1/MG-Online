@@ -277,7 +277,7 @@ def raisebet(data):
     current_bet = int(data['val'])
     emit('highlight', {'name' : namemap[players[action]], 'color' : 'white', 'border' : 'grey'}, broadcast=True)
     nextPlayer()
-    emit('update', {'id' : 'pot', 'val' : data['val']}, broadcast=True)
+    emit('update', {'id' : data['id'] + 'bet', 'val' : data['val']}, broadcast=True)
     last_action = 'raise'
 
 

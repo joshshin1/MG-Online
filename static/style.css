@@ -19,10 +19,10 @@ body {
 }
 
 #player_block {
-  height: 10%;
+  height: 15%;
 }
 
-div.player {
+div.player_info {
   background-color: white;
   border-style: solid;
   border-color: grey;

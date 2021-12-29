@@ -21,7 +21,6 @@
     <br>
     <br>
     <p>POT</p>
-    <p id="pot">0</p>
     <div id="control_block">
       <img id="card" src="static/JPEG/Red_back.jpg">
       <input type="submit" id="fold" value="Fold"/>
@@ -93,7 +92,8 @@
 
       socket.on('insert player', function(msg) {
         $('#player_block').append(
-          "<div class=\"player\" id=" + msg.name + "><p>" + msg.name + "</p><p id=" + msg.name + "stack>1000</p></div>"
+          "<div class=\"player\" id=" + msg.name + "><div class=\"player_info\"><p>" + msg.name + "</p><p id=" + msg.name + 
+          "stack>1000</p></div><p id=" + msg.name + "bet>0</p></div>"
         );
       });
 
