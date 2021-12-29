@@ -22,6 +22,10 @@ body {
   height: 15%;
 }
 
+div.player {
+  display: inline-block;
+}
+
 div.player_info {
   background-color: white;
   border-style: solid;
@@ -33,8 +37,6 @@ div.player_info {
   text-align: center;
   margin-right: 1%;
   margin-left: 1%;
-  display: inline-block;
-
 }
 
 img {
