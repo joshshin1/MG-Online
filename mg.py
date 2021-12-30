@@ -68,10 +68,12 @@ def nextHand():
   current_bet = 0
   last_action = ''
   players_folded = set()
+  emit('update', {'id' : 'winner', 'val' : ''})
   for player in players:
     emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
-    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
+    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'white'}, broadcast=True)
     emit('update', {'id' : namemap[player] + 'bet', 'val' : '0'}, broadcast=True)
+    emit('update image', {'id' : namemap[player] + 'card', 'val' : 'Red_back'}, broadcast=True)
   nextPlayer()
 
   
@@ -83,17 +85,16 @@ def nextPlayer():
     action = (action + 1) % len(players)
   makeDealer(players[action])
   if last_action != 'fold':
-    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'})
+    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'white'})
 
 
 def makeDealer(player):
-  emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'skyblue', 'border' :'blue'}, broadcast=True)
-  emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' :'blue'}, to=player)
+  emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'skyblue', 'border' : 'blue'}, broadcast=True)
+  emit('highlight', {'name' : 'control_block', 'color' : 'skyblue', 'border' : 'blue'}, to=player)
 
 
 def showdown():
   global game_in_progress
-  game_in_progress = False
 
   final_two = []
   for player in players:
@@ -102,19 +103,33 @@ def showdown():
 
   player1 = final_two[0]
   player2 = final_two[1]
-  if valuemap[cardmap[player1][0]] < valuemap[cardmap[player2][0]]:
-    transfer(player1, player2)
-  elif valuemap[cardmap[player1][0]] > valuemap[cardmap[player2][0]]:
-    transfer(player2, player1)
+
+  emit('update image', {'id' : namemap[player1] + 'card', 'val' : cardmap[player1]}, broadcast=True)
+  emit('update image', {'id' : namemap[player2] + 'card', 'val' : cardmap[player2]}, broadcast=True)
+
+  if (
+    valuemap[cardmap[player1][0]] < valuemap[cardmap[player2][0]]
+    and not (valuemap[cardmap[player1][0]] == 2 and valuemap[cardmap[player2][0]] > 10)
+    or valuemap[cardmap[player2][0]] == 2 and valuemap[cardmap[player1][0]] > 10
+  ):
+      transfer(player1, player2)
+      emit('update', {'id' : 'winner', 'val' : namemap[player2] + ' WINS'}, broadcast=True)
+  elif valuemap[cardmap[player1][0]] == valuemap[cardmap[player2][0]]:
+      print('tie')
   else:
-    print('tie')
+      transfer(player2, player1)
+      emit('update', {'id' : 'winner', 'val' : namemap[player1] + ' WINS'}, broadcast=True)
+  game_in_progress = False
 
 
 def transfer(loser, winner):
+  print('transfer', current_bet, 'from', loser, 'to', winner)
   stackmap[loser] -= current_bet
   stackmap[winner] += current_bet
   emit('update', {'id' : namemap[loser] + 'stack', 'val' : stackmap[loser]}, broadcast=True)
   emit('update', {'id' : namemap[winner] + 'stack', 'val' : stackmap[winner]}, broadcast=True)
+  emit('update max', {'val' : stackmap[loser]}, to=loser)
+  emit('update max', {'val' : stackmap[winner]}, to=winner)
 
 
 @socketio.on('request card')
@@ -142,6 +157,7 @@ def init_players():
     emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'lightcoral', 'border' : 'red'})
   for player in players:
     emit('update', {'id' : namemap[player] + 'stack', 'val' : stackmap[player]})
+    emit('update image', {'id' : namemap[player] + 'card', 'val' : cardmap[player]})
   if len(players) > 0:
     emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'skyblue', 'border' : 'blue'})
 
@@ -184,9 +200,10 @@ def sit(data):
     players.append(data['id'])
     player_lock.release()
     namemap[data['id']] = data['name']
-    stackmap[data['id']] = data['stack']
+    stackmap[data['id']] = int(data['stack'])
     cardmap[data['id']] = 'Red_back'
     emit('insert player', {'name' : data['name'], 'stack' : data['stack']}, broadcast=True)
+    emit('update max', {'val' : stackmap[data['id']]}, to=data['id'])
     emit('successful join', {'name' : data['name']})
     if len(players) == 1:
       makeDealer(players[0])
@@ -226,7 +243,7 @@ def leave(data):
       action = (action - 1) % len(players) 
       makeDealer(players[action])
 
-    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'grey'})
+    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'white'})
     emit('delete player', {'name' : val}, broadcast=True)
     emit('successful leave')
 
@@ -247,6 +264,8 @@ def fold(data):
       showdown()
     # there is a winner
     elif len(players) - len(players_folded) == 1:
+      #emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'lightcoral', 'border' : 'red'}, broadcast=True)
+      #emit('highlight', {'name' : 'control_block', 'color' : 'lightcoral', 'border' : 'red'})
       game_in_progress = False
       winner = None
       for player in players:
@@ -254,6 +273,7 @@ def fold(data):
           winner = player
           break
       transfer(data['id'], winner)
+      emit('update', {'id' : 'winner', 'val' : namemap[winner] + ' WINS'}, broadcast=True)
     else:
       emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'lightcoral', 'border' : 'red'}, broadcast=True)
       emit('highlight', {'name' : 'control_block', 'color' : 'lightcoral', 'border' : 'red'})
@@ -274,7 +294,10 @@ def call(data):
     emit('warning', {'val' : 'ONLY ONE CALL IS ALLOWED'})
   elif not current_bet:
     emit('warning', {'val' : 'NO BET TO CALL'})
+  elif stackmap[data['id']] < current_bet:
+    emit('warning', {'val' : 'NOT ENOUGH MONEY'})
   else:
+    emit('update', {'id' : namemap[data['id']] + 'bet', 'val' : current_bet}, broadcast=True)
     if len(players) - len(players_folded) == 2:
       showdown()
     else:

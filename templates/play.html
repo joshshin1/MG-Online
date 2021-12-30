@@ -10,6 +10,7 @@
   <body>
     <h1>MG Online</h1>
     <input type="submit" id="leave" value="Leave"/>
+    <p id="warning"></p>
     <form action="" method="POST">
       <input type="text" id="name" placeholder="Name"/>
       <input type="text" id="stack" placeholder="Stack"/>
@@ -20,16 +21,24 @@
     <div id="player_block">
     </div>
     <br>
-    <br>
-    <p>Winner:</p>
+    <p id="winner"></p>
     <div id="control_block">
-      <img id="card" src="static/JPEG/Red_back.jpg">
+      <!--
       <input type="submit" id="fold" value="Fold"/>
       <input type="submit" id="call" value="Call"/>
       <input type="submit" id="raise" value="Raise"/>
       <input type="text" id="amount" value="">
-      <br>
-      <p id="warning"></p>
+      -->
+      <img id="card" src="static/JPEG/Red_back.jpg">
+      <ul>
+        <li><span id="fold">FOLD</span></li>
+        <li><span id="call">CALL</span></li>
+        <li>
+          <span id="raise">RAISE</span>
+          <input type="range" id="slider" value="0" min="0" max="100" oninput="$('#amount').val(this.value)">
+          <input type="text" id="amount" placeholder="0"></input>
+        </li>
+      </ul>
     </div>
   </body>
   <script type="text/javascript">
@@ -96,7 +105,8 @@
         $('#player_block').append(
           "<div class=player id=" + msg.name + "><div class=player_info id=" + 
           msg.name + "info><p>" + msg.name + "</p><p id=" + msg.name + 
-          "stack>" + msg.stack + "</p></div><p id=" + msg.name + "bet>0</p></div>"
+          "stack>" + msg.stack + "</p></div><img id=" + msg.name + "card class=tablecard src=static/JPEG/Red_back.jpg><p id=" 
+          + msg.name + "bet>0</p></div>"
         );
       });
 
@@ -126,6 +136,14 @@
       // generic event to update inner html
       socket.on('update', function(msg) {
         $('#' + msg.id).html(msg.val);
+      });
+
+      socket.on('update image', function(msg) {
+        $('#' + msg.id).attr('src', 'static/JPEG/' + msg.val + '.jpg');
+      });
+
+      socket.on('update max', function(msg) {
+        $('#slider').attr('max', msg.val);
       });
     });
 
