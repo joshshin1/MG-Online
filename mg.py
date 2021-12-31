@@ -135,7 +135,6 @@ def transfer(loser, winner):
 
 @socketio.on('request card')
 def dealCard(data):
-  print('card requested')
   global cards_left
   deck_lock.acquire()
   card_index = random.randint(0, cards_left - 1)
@@ -150,8 +149,6 @@ def dealCard(data):
 
 @socketio.on('init players')
 def init_players():
-  print('init')
-  print(players)
   for player in players:
     emit('insert player', {'name' : namemap[player]})
   for player in players_folded:
@@ -165,9 +162,6 @@ def init_players():
 
 @socketio.on('reconnection')
 def reconnection(data):
-  print('reconnect')
-  print(players)
-  print(data)
   global action
   player_lock.acquire()
   for i in range(len(players)):
@@ -192,9 +186,6 @@ def reconnection(data):
 
 @socketio.on('play')
 def sit(data):
-  print('sit')
-  print(players)
-  print(data)
   global game_in_progress
   if data['id'] not in players and data['name'] != '' and len(players) < player_limit:
     player_lock.acquire()
@@ -214,16 +205,12 @@ def sit(data):
       players_folded.add(data['id'])
 
   elif data['id'] in players and players[action] == data['id']:
-    print('dealing')
     nextHand()
     emit('start game', to='private room')
 
 
 @socketio.on('leave game')
 def leave(data):
-  print('leave game')
-  print(players)
-  print(data)
   global game_in_progress
   global action
   val = namemap[data['id']]
@@ -331,16 +318,10 @@ def raisebet(data):
 # handle joining and leaving rooms
 @socketio.on('join')
 def join(data):
-  print('join')
-  print(players)
-  print(data)
   join_room(data['room'])
 
 @socketio.on('leave')
 def leave(data):
-  print('leave')
-  print(players)
-  print(data)
   leave_room(data['room'])
 
 
