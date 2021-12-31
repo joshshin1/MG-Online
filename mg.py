@@ -68,24 +68,25 @@ def nextHand():
   current_bet = 0
   last_action = ''
   players_folded = set()
-  emit('update', {'id' : 'winner', 'val' : ''})
+  emit('update', {'id' : 'winner', 'val' : ''}, broadcast=True)
   for player in players:
     emit('highlight', {'name' : namemap[player] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
     emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'white'}, broadcast=True)
     emit('update', {'id' : namemap[player] + 'bet', 'val' : '0'}, broadcast=True)
     emit('update image', {'id' : namemap[player] + 'card', 'val' : 'Red_back'}, broadcast=True)
-  nextPlayer()
+  makeDealer(players[action])
 
   
 def nextPlayer():
   global action
   global last_action
+  if last_action != 'fold':
+    emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
+    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'white'})
   action = (action + 1) % len(players)
   while players[action] in players_folded:
     action = (action + 1) % len(players)
   makeDealer(players[action])
-  if last_action != 'fold':
-    emit('highlight', {'name' : 'control_block', 'color' : 'white', 'border' : 'white'})
 
 
 def makeDealer(player):
@@ -259,6 +260,8 @@ def fold(data):
   elif not game_in_progress:
     emit('warning', {'val' : 'GAME HASNT BEEN STARTED'})
   else:
+    emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'lightcoral', 'border' : 'red'}, broadcast=True)
+    emit('highlight', {'name' : 'control_block', 'color' : 'lightcoral', 'border' : 'red'})
     players_folded.add(data['id'])
     if len(players) - len(players_folded) == 2 and last_action == 'call':
       showdown()
@@ -274,11 +277,8 @@ def fold(data):
           break
       transfer(data['id'], winner)
       emit('update', {'id' : 'winner', 'val' : namemap[winner] + ' WINS'}, broadcast=True)
-    else:
-      emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'lightcoral', 'border' : 'red'}, broadcast=True)
-      emit('highlight', {'name' : 'control_block', 'color' : 'lightcoral', 'border' : 'red'})
-      last_action = 'fold'
-      nextPlayer()
+    last_action = 'fold'
+    nextPlayer()
 
 
 @socketio.on('call')
@@ -302,9 +302,8 @@ def call(data):
       showdown()
     else:
       emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
-      nextPlayer()
       last_action = 'call'
-  
+    nextPlayer()  
 
 @socketio.on('raise') # make this a raise / bet event
 def raisebet(data):
@@ -324,9 +323,9 @@ def raisebet(data):
   else:
     current_bet = int(data['val'])
     emit('highlight', {'name' : namemap[players[action]] + 'info', 'color' : 'white', 'border' : 'grey'}, broadcast=True)
-    nextPlayer()
     emit('update', {'id' : namemap[data['id']] + 'bet', 'val' : data['val']}, broadcast=True)
     last_action = 'raise'
+    nextPlayer()
 
 
 # handle joining and leaving rooms

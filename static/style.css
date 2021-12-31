@@ -67,6 +67,7 @@ ul {
 }
 
 li {
+  pointer-events: none;
   flex-grow: 1;
   background-color: black;
   display: list-item;
@@ -84,8 +85,13 @@ li:hover {
 }
 
 span {
+  pointer-events: auto;
   display: inline;
   vertical-align: middle;
+}
+
+input {
+  pointer-events: auto;
 }
 
 #control_block {
